@@ -1,18 +1,35 @@
 import subprocess
 from django.db import models
 from django.core.exceptions import ValidationError
-from datetime import datetime
+from datetime import datetime, date
 import os
 
 from certificate_manager.settings import BASE_DIR 
 
-# Create your models here.
+def custom_cert_name(instance, filename):
+    extension = filename.split('.')[-1]
+    modified_domain_name = instance.domain_name.replace(".", "_")
+    today = date.today()
+    new_filename = f"{modified_domain_name}-{today}.{extension}"
+    return f"uploads/certs/{new_filename}"
+
+def custom_key_name(instance, filename):
+    extension = filename.split('.')[-1]
+    modified_domain_name = instance.domain_name.replace(".", "_")
+    today = date.today()
+    new_filename = f"{modified_domain_name}-{today}.{extension}"
+    return f"uploads/private_keys/{new_filename}"
+
 class Certificate(models.Model):
     domain_name = models.CharField(max_length=255, blank=False, null=False)
     owner = models.EmailField(blank=False, null=False)
     expiry_date = models.DateTimeField(null=True, blank=True)
-    private_key = models.FileField(upload_to='uploads/private_keys')
-    certificate = models.FileField(upload_to='uploads/certs')
+    notes = models.CharField(max_length=1000, blank=True, null=True)
+    archived = models.BooleanField(default=False)
+    #Add certificate ID 
+    #archive certificate one month after expiry
+    private_key = models.FileField(upload_to=custom_key_name)
+    certificate = models.FileField(upload_to=custom_cert_name)
 
     def __str__(self):
         return self.domain_name
